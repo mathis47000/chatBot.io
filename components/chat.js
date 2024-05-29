@@ -3,9 +3,9 @@ import { MessageClass } from "../models/message";
 
 const listMessages = [
     new MessageClass("Hello", "me"),
-    new MessageClass("Hi", "chatGpt"),
+    new MessageClass("Hi you dudus us dus", "chatGpt"),
     new MessageClass("How are you?", "me"),
-    new MessageClass("I'm fine, thank you", "chatGpt"),
+    new MessageClass("I'm fine, thank you", "google"),
     new MessageClass("What about you?", "chatGpt"),
     new MessageClass("I'm good too", "me")
 ];
