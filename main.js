@@ -9,6 +9,8 @@ document.getElementById('header').innerHTML = Header();
 document.getElementById('chat').innerHTML = Chat();
 document.getElementById('input').innerHTML = Input();
 
+// dom interaction
+
 const sendMessage = () => {
     const message = document.getElementById('input-send').value;
     sendUserMessage(message);

@@ -1,15 +1,37 @@
+import { cardsAnimes } from "../components/messages/cardsAnimes";
+import { cardsMovieDB } from "../components/messages/cardsMovieDB";
+import { CardsNews } from "../components/messages/cardsNews";
+import { Help } from "../components/messages/help";
 import { renderChat } from "../main";
 import { BotClass } from "../models/bot";
 import { addMessage } from "./messageService";
 
-const tokenTMDB = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2MDNjYmQ3YTI5NDZkNzg2ZjNhMTE0NzdhNTgwOTNhYyIsInN1YiI6IjY2NTg0MGZkZGQyOGEyMjI0ZTkzZTY2MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.G6zvgfW7rgaXDaIkXGMgXnzdRnS51Xc1rn-aF-9wv_c";
-const tokenNewApi = "b44390914b854357bf275557c80c51ab";
-const tokenAnimeList = "533a755db3f0e796dd32a2bb4b37720c1f1922a2a80c912d5415608b11bb6662"
-
 export const listBot = [
-    new BotClass("The Movie DB", "https://pbs.twimg.com/profile_images/1243623122089041920/gVZIvphd_400x400.jpg", ""),
-    new BotClass("facebook", "https://www.facebook.com/images/fb_icon_325x325.png", "https://animeschedule.net/api/v3"),
-    new BotClass("news", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAAAAABXZoBIAAAAm0lEQVR4AcXSERACQRSA4c8hjqOckhyaiXKnKMohzmdyDrIoX0jOs+Ak3Zmt66Dqeuk92X/2gydP+TP94Ro2z5wD3+jyG6s9TJtMR2yqj51g3yaNvTADuUXnDk5YhljhHOFtxyjCaxmxC7FCHWFZsQgxIw0CLAfGIZYZvrGgbt5rF3PC6dLktoMz0PaQGBPSO97q57Rfj8j9neYdKUxgGle+C2sAAAAASUVORK5CYII=", ""),
+    new BotClass("The Movie DB",
+        "https://pbs.twimg.com/profile_images/1243623122089041920/gVZIvphd_400x400.jpg",
+        "https://api.themoviedb.org/3/",
+        ["movie", "tv"],
+        ["popular", "top_rated", "upcoming", "now_playing", "on_the_air", "airing_today"]),
+    new BotClass("jikan.moe",
+        "https://avatars.githubusercontent.com/u/30051078?s=280&v=4",
+        "https://api.jikan.moe/v4/",
+        ["anime", "manga"],
+        ["airing", "bypopularity", "upcoming", "favorite", "random"]),
+    new BotClass("news",
+        "https://newsapi.org/images/n-logo-border.png",
+        "https://newsapi.org/v2/",
+        ["news"],
+        ["top-headlines", "everything"]),
+    new BotClass("error bot",
+        "https://cdn.pixabay.com/photo/2017/02/12/21/29/false-2061132_640.png",
+        "",
+        [],
+        []),
+    new BotClass("help",
+        "https://img.icons8.com/ios/50/000000/help.png",
+        "",
+        [],
+        [])
 ];
 
 export const getBotFromName = (name) => {
@@ -17,7 +39,16 @@ export const getBotFromName = (name) => {
 }
 
 export const fetchMovieDB = async (query) => {
-    const url = 'https://api.themoviedb.org/3/discover/movie?include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc';
+    const bot = getBotFromName("The Movie DB");
+    const action = query.split(" ")[0];
+    const subAction = query.split(" ")[1];
+    if (!bot.action.includes(action) || !bot.subAction.includes(subAction)) {
+        // return the list of action and subAction user friendly
+        return [];
+    }
+    // movie query top_rated, popular, upcoming, now_playing
+    // tv query top_rated, popular, on_the_air, airing_today
+    const url = bot.api + action + '/' + subAction + '?language=en-US&page=1';
     const options = {
         method: 'GET',
         headers: {
@@ -28,6 +59,7 @@ export const fetchMovieDB = async (query) => {
 
     return fetch(url, options)
         .then(response => {
+            console.log(response);
             return response.json();
         })
         .then(data => {
@@ -36,13 +68,25 @@ export const fetchMovieDB = async (query) => {
 }
 
 export const fetchNewApi = async (query) => {
-    const url = 'https://newsapi.org/v2/top-headlines?country=fr&apiKey=b44390914b854357bf275557c80c51ab';
+
+    const bot = getBotFromName("news");
+    const action = query.split(" ")[0];
+    const subAction = query.split(" ")[1];
+    const queryParam = query.split(" ")[2] ? "&q=" + query.split(" ")[2] : "";
+    if (!bot.action.includes(action) || !bot.subAction.includes(subAction)) {
+        // return the list of action and subAction user friendly
+        return [];
+    }
+    const url = bot.api + subAction
+        + '?pageSize=5' + (subAction == 'top-headlines' ? '&country=fr' : '')
+        + queryParam + '&apiKey=b44390914b854357bf275557c80c51ab';
     const options = {
         method: 'GET'
     };
 
     return fetch(url, options)
         .then(response => {
+            console.log(response);
             return response.json();
         })
         .then(data => {
@@ -51,44 +95,58 @@ export const fetchNewApi = async (query) => {
 }
 
 export const fetchAnimeList = async (query) => {
-    const url = 'https://api.myanimelist.net/v2/anime/season/2017/summer?limit=4'
+    const bot = getBotFromName("jikan.moe");
+    const action = query.split(" ")[0];
+    const subAction = query.split(" ")[1];
+    if (!bot.action.includes(action)) {
+        return [];
+    }
+    let url = "";
 
-    const options = {
-        method: 'GET',
-        headers: {
-            Authorization: `Bearer ${tokenAnimeList}`
-        }
+    switch (subAction) {
+        case "top":
+            url = bot.api + 'top/' + action + '?limit=8&sfw=true';
+            break;
+        case "random":
+            url = bot.api + 'random/' + action + '?sfw=true';
+            break;
+        default:
+            url = bot.api + action + '?q=' + subAction + '&limit=8&sfw=true';
+            break;
     }
 
-    return fetch(url, options)
+    return fetch(url)
         .then(response => {
             return response.json();
         })
         .then(data => {
+            if (subAction == "random") {
+                return [data.data];
+            }
             return data.data;
         })
 }
 
 
 export const filterBotAction = async (message) => {
-    if (message.includes("movie")) {
+    if (listBot[0].action.some(a => message.includes(a))) {
         await fetchMovieDB(message).then((response) => {
-            addMessage(response, "The Movie DB");
+            addMessage(cardsMovieDB(response), "The Movie DB");
             renderChat();
         });
     } else if (message.includes("news")) {
         await fetchNewApi(message).then((response) => {
-            addMessage(response, "news");
+            addMessage(CardsNews(response), "news");
             renderChat();
         });
-    } else if (message.includes("anime")) {
+    } else if (listBot[1].action.some(a => message.includes(a))) {
         await fetchAnimeList(message).then((response) => {
-            console.log(response);
-            addMessage(response, "news");
+            addMessage(cardsAnimes(response), "jikan.moe");
             renderChat();
         });
     } else {
-        addMessage("Sorry, I don't understand", "facebook");
+        addMessage(Help(), "help");
         renderChat();
     }
+    return `<div>oui</div>`;
 }

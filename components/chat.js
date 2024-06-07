@@ -1,5 +1,5 @@
 import { listMessages } from "../services/messageService";
-import { Message } from "./message";
+import { Message } from "./messages/message";
 
 export const Chat = () => {
     return `    
