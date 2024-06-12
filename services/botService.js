@@ -4,27 +4,30 @@ import { CardsNews } from "../components/messages/cardsNews";
 import { Help } from "../components/messages/help";
 import { renderChat } from "../main";
 import { BotClass } from "../models/bot";
+import { getSynonyms } from "../utils/synonym";
 import { addMessage } from "./messageService";
+
+export let loader = false;
 
 export const getBotFromName = (name) => {
   return listBot.find((bot) => bot.name == name);
 };
 
+export const getAction = (bot, messsage) => {
+  const action = bot.action.find((a) => messsage.includes(a));
+  const subAction = bot.subAction.find((a) => messsage.includes(a));
+  const query = messsage.replace(action, "").replace(subAction, "").trim();
+  return [action, subAction, query];
+}
+
 export const fetchMovieDB = async (query) => {
   const bot = getBotFromName("The Movie DB");
-  const action = query.split(" ")[0];
-  const subAction = query.split(" ")[1];
-  if (!bot.action.includes(action) || !bot.subAction.includes(subAction)) {
-    // return the list of action and subAction user friendly
-    return [];
-  }
-  // movie query top_rated, popular, upcoming, now_playing
-  // tv query top_rated, popular, on_the_air, airing_today
+  let [action, subAction, queryParam] = getAction(bot, query);
   const url =
     bot.api +
     action +
     "/" +
-    subAction +
+    (subAction ? subAction : "popular") +
     "?include_adult=false&language=en-US&page=1&sort_by=popularity.desc";
   const options = {
     method: "GET",
@@ -37,7 +40,6 @@ export const fetchMovieDB = async (query) => {
 
   return fetch(url, options)
     .then((response) => {
-      console.log(response);
       return response.json();
     })
     .then((data) => {
@@ -47,18 +49,16 @@ export const fetchMovieDB = async (query) => {
 
 export const fetchNewApi = async (query) => {
   const bot = getBotFromName("news");
-  const action = query.split(" ")[0];
-  const subAction = query.split(" ")[1];
-  const queryParam = query.split(" ")[2] ? "&q=" + query.split(" ")[2] : "";
-  if (!bot.action.includes(action) || !bot.subAction.includes(subAction)) {
-    // return the list of action and subAction user friendly
-    return [];
+  let [action, subAction, queryParam] = getAction(bot, query);
+  queryParam = queryParam ? "&q=" + queryParam : "";
+  if (queryParam) {
+    subAction = "everything";
   }
   const url =
     bot.api +
-    subAction +
+    (subAction ? subAction : "top-headlines") +
     "?pageSize=5" +
-    (subAction == "top-headlines" ? "&country=fr" : "") +
+    (queryParam == "" ? "&country=fr" : "") +
     queryParam +
     "&apiKey=b44390914b854357bf275557c80c51ab";
   const options = {
@@ -67,7 +67,6 @@ export const fetchNewApi = async (query) => {
 
   return fetch(url, options)
     .then((response) => {
-      console.log(response);
       return response.json();
     })
     .then((data) => {
@@ -77,22 +76,18 @@ export const fetchNewApi = async (query) => {
 
 export const fetchAnimeList = async (query) => {
   const bot = getBotFromName("jikan.moe");
-  const action = query.split(" ")[0];
-  const subAction = query.split(" ")[1];
-  if (!bot.action.includes(action)) {
-    return [];
-  }
+  const [action, subAction, queryParam] = getAction(bot, query);
   let url = "";
 
   switch (subAction) {
-    case "top":
-      url = bot.api + "top/" + action + "?limit=8&sfw=true";
+    case undefined:
+      url = bot.api + action + "?q=" + queryParam + "&limit=8&sfw=true";
       break;
     case "random":
       url = bot.api + "random/" + action + "?sfw=true";
       break;
     default:
-      url = bot.api + action + "?q=" + subAction + "&limit=8&sfw=true";
+      url = bot.api + subAction + "/" + action + "?limit=8&sfw=true";
       break;
   }
 
@@ -119,8 +114,6 @@ export const listBot = [
       "top_rated",
       "upcoming",
       "now_playing",
-      "on_the_air",
-      "airing_today",
     ],
     fetchMovieDB,
     cardsMovieDB,
@@ -130,31 +123,75 @@ export const listBot = [
     "https://avatars.githubusercontent.com/u/30051078?s=280&v=4",
     "https://api.jikan.moe/v4/",
     ["anime", "manga"],
-    ["airing", "bypopularity", "upcoming", "favorite", "random"],
+    ["top", "random"],
     fetchAnimeList,
     cardsAnimes,
+    true,
   ),
   new BotClass(
     "news",
     "https://newsapi.org/images/n-logo-border.png",
     "https://newsapi.org/v2/",
     ["news"],
-    ["top-headlines", "everything"],
+    [],
     fetchNewApi,
     CardsNews,
+    true,
+  ),
+  new BotClass(
+    "help",
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/OOjs_UI_icon_help.svg/1200px-OOjs_UI_icon_help.svg.png",
+    "",
+    ["help"],
+    [],
+    async () => { return null; },
+    Help,
+  ),
+  new BotClass(
+    "all",
+    "https://cdn-icons-png.flaticon.com/512/5110/5110770.png",
+    "",
+    ["all"],
+    [],
+    async (data) => {
+      const responses = [];
+
+      const movieData = await fetchMovieDB("movie popular");
+      responses.push({ data: movieData, source: "The Movie DB", formatter: cardsMovieDB });
+
+      const animeData = await fetchAnimeList("anime top");
+      responses.push({ data: animeData, source: "jikan.moe", formatter: cardsAnimes });
+
+      const newsData = await fetchNewApi("news");
+      responses.push({ data: newsData, source: "news", formatter: CardsNews });
+
+      return responses;
+    },
+    (res) => {
+      return res.map((r) => r.formatter(r.data));
+    }
   ),
 ];
 
 export const filterBotAction = async (message) => {
+  loader = true;
   listBot.forEach(async (bot) => {
+    getSynonyms.forEach((synonyms) => {
+      synonyms.forEach((synonym) => {
+        if (message.includes(synonym)) {
+          message = message.replace(synonym, synonyms[0]);
+        }
+      });
+    });
+    console.log("message", message);
     if (bot.action.some((a) => message.includes(a))) {
       await bot.fetchAction(message).then((response) => {
+        loader = false;
+        renderChat();
         addMessage(bot.displayAction(response), bot.name);
         renderChat();
         return;
       });
     }
   });
-  addMessage(Help(), "help");
-  renderChat();
 };

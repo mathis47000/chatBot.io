@@ -34,3 +34,9 @@ document.getElementById('input-send').addEventListener('keydown', (event) => {
         sendMessage();
     }
 });
+
+renderChat();
+document.getElementById('input-send').focus();
+if (localStorage.getItem('messages') === null) {
+    document.getElementById('input-send').value = 'try "help" to get started';
+}
