@@ -1,10 +1,9 @@
 import { getBotFromName } from "../../services/botService";
 
 export const Message = (message) => {
-    console.log(message);
-    return `
-    <div class="flex items-start gap-2.5" dir="${message.author == 'me' ? 'rtl' : ''}">
-    ${message.author != 'me' ? '<img class="w-8 h-8 rounded-full object-contain" src="' + getBotFromName(message.author).icon + '" alt="' + getBotFromName(message.author).name + '"/>' : ''}
+  return `
+    <div class="flex items-start gap-2.5" dir="${message.author == "me" ? "rtl" : ""}">
+    ${message.author != "me" ? '<img class="w-8 h-8 rounded-full object-contain" src="' + getBotFromName(message.author)?.icon + '" alt="' + getBotFromName(message.author)?.name + '"/>' : ""}
     <div class="flex flex-col gap-1 w-fit">
     <div class="flex items-center space-x-2 rtl:space-x-reverse">
         <span class="text-sm font-semibold text-white">${message.author}</span>
@@ -17,4 +16,4 @@ export const Message = (message) => {
     </div>
     </div>
     `;
-}
+};
