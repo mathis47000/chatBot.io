@@ -34,7 +34,7 @@ export const fetchMovieDB = async (query) => {
     headers: {
       accept: "application/json",
       Authorization:
-        "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2MDNjYmQ3YTI5NDZkNzg2ZjNhMTE0NzdhNTgwOTNhYyIsInN1YiI6IjY2NTg0MGZkZGQyOGEyMjI0ZTkzZTY2MCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.G6zvgfW7rgaXDaIkXGMgXnzdRnS51Xc1rn-aF-9wv_c",
+        import.meta.env.VITE_tokenMovie,
     },
   };
 
@@ -54,13 +54,14 @@ export const fetchNewApi = async (query) => {
   if (queryParam) {
     subAction = "everything";
   }
+  console.log(import.meta.env);
   const url =
     bot.api +
     (subAction ? subAction : "top-headlines") +
     "?pageSize=5" +
     (queryParam == "" ? "&country=fr" : "") +
     queryParam +
-    "&apiKey=b44390914b854357bf275557c80c51ab";
+    "&apiKey=" + import.meta.env.VITE_tokenNews;
   const options = {
     method: "GET",
   };
@@ -183,7 +184,6 @@ export const filterBotAction = async (message) => {
         }
       });
     });
-    console.log("message", message);
     if (bot.action.some((a) => message.includes(a))) {
       await bot.fetchAction(message).then((response) => {
         loader = false;
