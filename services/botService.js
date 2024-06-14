@@ -194,6 +194,8 @@ export const filterBotAction = async (message) => {
             });
         }
     });
-    addMessage("Try 'help' to see all commands", "help");
-    loader = false;
+    setTimeout(() => {
+        loader = false;
+        renderChat();
+    }, 2000);
 };
