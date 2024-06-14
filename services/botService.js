@@ -10,188 +10,190 @@ import { addMessage } from "./messageService";
 export let loader = false;
 
 export const getBotFromName = (name) => {
-  return listBot.find((bot) => bot.name == name);
+    return listBot.find((bot) => bot.name == name);
 };
 
 export const getAction = (bot, messsage) => {
-  const action = bot.action.find((a) => messsage.includes(a));
-  const subAction = bot.subAction.find((a) => messsage.includes(a));
-  const query = messsage.replace(action, "").replace(subAction, "").trim();
-  return [action, subAction, query];
+    const action = bot.action.find((a) => messsage.includes(a));
+    const subAction = bot.subAction.find((a) => messsage.includes(a));
+    const query = messsage.replace(action, "").replace(subAction, "").trim();
+    return [action, subAction, query];
 }
 
 export const fetchMovieDB = async (query) => {
-  const bot = getBotFromName("The Movie DB");
-  let [action, subAction, queryParam] = getAction(bot, query);
-  const url =
-    bot.api +
-    action +
-    "/" +
-    (subAction ? subAction : "popular") +
-    "?include_adult=false&language=en-US&page=1&sort_by=popularity.desc";
-  const options = {
-    method: "GET",
-    headers: {
-      accept: "application/json",
-      Authorization:
-        import.meta.env.VITE_tokenMovie,
-    },
-  };
+    const bot = getBotFromName("The Movie DB");
+    let [action, subAction, queryParam] = getAction(bot, query);
+    const url =
+        bot.api +
+        action +
+        "/" +
+        (subAction ? subAction : "popular") +
+        "?include_adult=false&language=en-US&page=1&sort_by=popularity.desc";
+    const options = {
+        method: "GET",
+        headers: {
+            accept: "application/json",
+            Authorization:
+                import.meta.env.VITE_tokenMovie,
+        },
+    };
 
-  return fetch(url, options)
-    .then((response) => {
-      return response.json();
-    })
-    .then((data) => {
-      return data.results;
-    });
+    return fetch(url, options)
+        .then((response) => {
+            return response.json();
+        })
+        .then((data) => {
+            return data.results;
+        });
 };
 
 export const fetchNewApi = async (query) => {
-  const bot = getBotFromName("news");
-  let [action, subAction, queryParam] = getAction(bot, query);
-  queryParam = queryParam ? "&q=" + queryParam : "";
-  if (queryParam) {
-    subAction = "everything";
-  }
-  console.log(import.meta.env);
-  const url =
-    bot.api +
-    (subAction ? subAction : "top-headlines") +
-    "?pageSize=5" +
-    (queryParam == "" ? "&country=fr" : "") +
-    queryParam +
-    "&apiKey=" + import.meta.env.VITE_tokenNews;
-  const options = {
-    method: "GET",
-  };
+    const bot = getBotFromName("news");
+    let [action, subAction, queryParam] = getAction(bot, query);
+    queryParam = queryParam ? "&q=" + queryParam : "";
+    if (queryParam) {
+        subAction = "everything";
+    }
+    console.log(import.meta.env);
+    const url =
+        bot.api +
+        (subAction ? subAction : "top-headlines") +
+        "?pageSize=5" +
+        (queryParam == "" ? "&country=fr" : "") +
+        queryParam +
+        "&apiKey=" + import.meta.env.VITE_tokenNews;
+    const options = {
+        method: "GET",
+    };
 
-  return fetch(url, options)
-    .then((response) => {
-      return response.json();
-    })
-    .then((data) => {
-      return data.articles;
-    });
+    return fetch(url, options)
+        .then((response) => {
+            return response.json();
+        })
+        .then((data) => {
+            return data.articles;
+        });
 };
 
 export const fetchAnimeList = async (query) => {
-  const bot = getBotFromName("jikan.moe");
-  const [action, subAction, queryParam] = getAction(bot, query);
-  let url = "";
+    const bot = getBotFromName("jikan.moe");
+    const [action, subAction, queryParam] = getAction(bot, query);
+    let url = "";
 
-  switch (subAction) {
-    case undefined:
-      url = bot.api + action + "?q=" + queryParam + "&limit=8&sfw=true";
-      break;
-    case "random":
-      url = bot.api + "random/" + action + "?sfw=true";
-      break;
-    default:
-      url = bot.api + subAction + "/" + action + "?limit=8&sfw=true";
-      break;
-  }
+    switch (subAction) {
+        case undefined:
+            url = bot.api + action + "?q=" + queryParam + "&limit=8&sfw=true";
+            break;
+        case "random":
+            url = bot.api + "random/" + action + "?sfw=true";
+            break;
+        default:
+            url = bot.api + subAction + "/" + action + "?limit=8&sfw=true";
+            break;
+    }
 
-  return fetch(url)
-    .then((response) => {
-      return response.json();
-    })
-    .then((data) => {
-      if (subAction == "random") {
-        return [data.data];
-      }
-      return data.data;
-    });
+    return fetch(url)
+        .then((response) => {
+            return response.json();
+        })
+        .then((data) => {
+            if (subAction == "random") {
+                return [data.data];
+            }
+            return data.data;
+        });
 };
 
 export const listBot = [
-  new BotClass(
-    "The Movie DB",
-    "https://pbs.twimg.com/profile_images/1243623122089041920/gVZIvphd_400x400.jpg",
-    "https://api.themoviedb.org/3/",
-    ["movie", "tv"],
-    [
-      "popular",
-      "top_rated",
-      "upcoming",
-      "now_playing",
-    ],
-    fetchMovieDB,
-    cardsMovieDB,
-  ),
-  new BotClass(
-    "jikan.moe",
-    "https://avatars.githubusercontent.com/u/30051078?s=280&v=4",
-    "https://api.jikan.moe/v4/",
-    ["anime", "manga"],
-    ["top", "random"],
-    fetchAnimeList,
-    cardsAnimes,
-    true,
-  ),
-  new BotClass(
-    "news",
-    "https://newsapi.org/images/n-logo-border.png",
-    "https://newsapi.org/v2/",
-    ["news"],
-    [],
-    fetchNewApi,
-    CardsNews,
-    true,
-  ),
-  new BotClass(
-    "help",
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/OOjs_UI_icon_help.svg/1200px-OOjs_UI_icon_help.svg.png",
-    "",
-    ["help"],
-    [],
-    async () => { return null; },
-    Help,
-  ),
-  new BotClass(
-    "all",
-    "https://cdn-icons-png.flaticon.com/512/5110/5110770.png",
-    "",
-    ["all"],
-    [],
-    async (data) => {
-      const responses = [];
+    new BotClass(
+        "The Movie DB",
+        "https://pbs.twimg.com/profile_images/1243623122089041920/gVZIvphd_400x400.jpg",
+        "https://api.themoviedb.org/3/",
+        ["movie", "tv"],
+        [
+            "popular",
+            "top_rated",
+            "upcoming",
+            "now_playing",
+        ],
+        fetchMovieDB,
+        cardsMovieDB,
+    ),
+    new BotClass(
+        "jikan.moe",
+        "https://avatars.githubusercontent.com/u/30051078?s=280&v=4",
+        "https://api.jikan.moe/v4/",
+        ["anime", "manga"],
+        ["top", "random"],
+        fetchAnimeList,
+        cardsAnimes,
+        true,
+    ),
+    new BotClass(
+        "news",
+        "https://newsapi.org/images/n-logo-border.png",
+        "https://newsapi.org/v2/",
+        ["news"],
+        [],
+        fetchNewApi,
+        CardsNews,
+        true,
+    ),
+    new BotClass(
+        "help",
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/OOjs_UI_icon_help.svg/1200px-OOjs_UI_icon_help.svg.png",
+        "",
+        ["help"],
+        [],
+        async () => { return null; },
+        Help,
+    ),
+    new BotClass(
+        "all",
+        "https://cdn-icons-png.flaticon.com/512/5110/5110770.png",
+        "",
+        ["all"],
+        [],
+        async (data) => {
+            const responses = [];
 
-      const movieData = await fetchMovieDB("movie popular");
-      responses.push({ data: movieData, source: "The Movie DB", formatter: cardsMovieDB });
+            const movieData = await fetchMovieDB("movie popular");
+            responses.push({ data: movieData, source: "The Movie DB", formatter: cardsMovieDB });
 
-      const animeData = await fetchAnimeList("anime top");
-      responses.push({ data: animeData, source: "jikan.moe", formatter: cardsAnimes });
+            const animeData = await fetchAnimeList("anime top");
+            responses.push({ data: animeData, source: "jikan.moe", formatter: cardsAnimes });
 
-      const newsData = await fetchNewApi("news");
-      responses.push({ data: newsData, source: "news", formatter: CardsNews });
+            const newsData = await fetchNewApi("news");
+            responses.push({ data: newsData, source: "news", formatter: CardsNews });
 
-      return responses;
-    },
-    (res) => {
-      return res.map((r) => r.formatter(r.data));
-    }
-  ),
+            return responses;
+        },
+        (res) => {
+            return res.map((r) => r.formatter(r.data));
+        }
+    ),
 ];
 
 export const filterBotAction = async (message) => {
-  loader = true;
-  listBot.forEach(async (bot) => {
-    getSynonyms.forEach((synonyms) => {
-      synonyms.forEach((synonym) => {
-        if (message.includes(synonym)) {
-          message = message.replace(synonym, synonyms[0]);
+    loader = true;
+    listBot.forEach(async (bot) => {
+        getSynonyms.forEach((synonyms) => {
+            synonyms.forEach((synonym) => {
+                if (message.includes(synonym)) {
+                    message = message.replace(synonym, synonyms[0]);
+                }
+            });
+        });
+        if (bot.action.some((a) => message.includes(a))) {
+            await bot.fetchAction(message).then((response) => {
+                loader = false;
+                renderChat();
+                addMessage(bot.displayAction(response), bot.name);
+                renderChat();
+                return;
+            });
         }
-      });
     });
-    if (bot.action.some((a) => message.includes(a))) {
-      await bot.fetchAction(message).then((response) => {
-        loader = false;
-        renderChat();
-        addMessage(bot.displayAction(response), bot.name);
-        renderChat();
-        return;
-      });
-    }
-  });
+    addMessage("Try 'help' to see all commands", "help");
+    loader = false;
 };

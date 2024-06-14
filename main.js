@@ -13,6 +13,10 @@ document.getElementById('input').innerHTML = Input();
 
 const sendMessage = () => {
     const message = document.getElementById('input-send').value;
+    if (message === '') {
+        document.getElementById('input-send').focus();
+        return;
+    }
     sendUserMessage(message);
     document.getElementById('input-send').value = '';
     document.getElementById('input-send').focus();
